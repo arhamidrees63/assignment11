@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # =======================
+  # Service: FastAPI Web App
+  # =======================
+  web:
+    build: .
+    container_name: fastapi_calculator
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/fastapi_db
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/\")' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 25s
+    networks:
+      - app-network
+
+  # =======================
+  # Service: PostgreSQL Database
+  # =======================
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fastapi_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # ✅ Fixed for PostgreSQL 18+: store under /var/lib/postgresql (not /data)
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # =======================
+  # Service: pgAdmin (optional UI)
+  # =======================
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"   # Access at http://localhost:5050
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+# =======================
+# Volumes and Networks
+# =======================
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
