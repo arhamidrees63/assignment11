@@ -125,4 +125,4 @@ Implement design patterns (Factory) for scalable logic.
 
 Maintain continuous testing and security in a CI/CD pipeline.
 
-Build, tag, and deploy a production-ready Docker image to Docker Hub.
+Build, tag, and deploy a production-ready Docker image to Docker Hub.# re-run deploy
